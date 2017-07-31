@@ -21,9 +21,13 @@ numx = 585;
 numy = 1200;
 
 
-%% ring averaged vorticity 
+%% vorticity: "ring" averaged, and wavenumber spectra
 
 numfiles = 1900;
+datadir = '/Volumes/ThunderBay/fC_RODSEX_0928_D3_dx1p3/';
+% datadir = '~/Dropbox/RODSEX/funwaveC/';
+
+
 % make averaging areas
 RING = struct;
 for ii=1:25;
@@ -34,22 +38,56 @@ for ii=1:25;
     RING(ii).vort = zeros(numfiles,RING(ii).steps);
 end
 
-datadir = '/Volumes/ThunderBay/fC_RODSEX_0928_D3_dx1p3/';
-% datadir = '~/Dropbox/RODSEX/funwaveC/';
 
 
+% load a file and calucluate one sided spectrum size
+load(sprintf('%ssnap_vort_l2_%4.0f.mat',datadir,3599))
+% stop = alongshore spectrum length
+sd = size(vort,2);
+if mod(sd,2)==0               % only half the data is good
+    stop=sd/2+1;                % we are making a onesided spectrum
+else						  
+    stop=(sd+1)/2;
+end
+
+% cross-shore indecies for region near ring
+ixs = 510-20:510+20; 
+% stop2 = cross-shore spectrum length
+sd2 = length(ixs);
+if mod(sd2,2)==0               % only half the data is good
+    stop2=sd2/2+1;                % we are making a onesided spectrum
+else						  
+    stop2=(sd2+1)/2;
+end
+
+
+% initialize vars
 n=0;
+vort_ring = zeros(numfiles,60);
+wavenum_spec_vort = zeros(size(vort,1),stop);
+wavenum_spec_vort_xshore_short = zeros(numy,stop2);
+
+
 for ii = 3599:(3599+numfiles)
     n=n+1;
     fprintf('%g\n',ii)
     load(sprintf('%ssnap_vort_l2_%4.0f.mat',datadir,ii))
-
+    
+    % ring averages
     for jj = 1:length(RING) 
         for kk = 0:(RING(jj).steps-1);
             RING(jj).vort(n,kk+1) = sum(sum(vort(RING(jj).i,RING(jj).j ...
                 + (RING(jj).bin_length*kk))))/(RING(jj).bin_length.^2);
         end
     end
+    
+    % alongshore wavenumber spectra
+    [mpsd,wavenums]=mypsd(vort(:,:).',1/dy);
+    wavenum_spec_vort = wavenum_spec_vort + mpsd.'/numfiles;
+    
+    % cross-shore wavenumber spectra
+    [mpsd2,wavenums_x_short]=mypsd(vort(ixs,:),1/dx);
+    wavenum_spec_vort_xshore_short = wavenum_spec_vort_xshore_short + mpsd2.'/numfiles;
  
 end
 
@@ -69,56 +107,11 @@ end
 figure(3); clf
 plot(rsize,stdvort)
 
-%% tmp
 
 
-datadir = '/Volumes/ThunderBay/fC_RODSEX_0928_D3_dx1p3/';
-% datadir = '~/Dropbox/RODSEX/funwaveC/';
+%% combine cross- and alongshore wavenumber spectra for comparison with
+% ring averages
 
-% load a file and calucluate one sided spectrum size
-load(sprintf('%ssnap_vort_l2_%4.0f.mat',datadir,3599))
-sd = size(vort,2);
-if mod(sd,2)==0               % only half the data is good
-    stop=sd/2+1;                % we are making a onesided spectrum
-else						  
-    stop=(sd+1)/2;
-end
-
-% cross-shore indecies for region near ring
-ixs = 510-20:510+20; 
-
-sd2 = length(ixs);
-if mod(sd2,2)==0               % only half the data is good
-    stop2=sd2/2+1;                % we are making a onesided spectrum
-else						  
-    stop2=(sd2+1)/2;
-end
-
-
-
-numfiles = 1900;
-vort_ring = zeros(numfiles,60);
-wavenum_spec_vort = zeros(size(vort,1),stop);
-wavenum_spec_vort_xshore_short = zeros(numy,stop);
-n=0;
-for ii = 3599:(3599+numfiles)
-    n=n+1;
-    fprintf('%g\n',ii)
-    load(sprintf('%ssnap_vort_l2_%4.0f.mat',datadir,ii))    
-    
-    [mpsd,wavenums]=mypsd(vort(:,:).',1/dy);
-    wavenum_spec_vort = wavenum_spec_vort + mpsd.'/numfiles;
-    
-    [mpsd2,wavenums_x_short]=mypsd(vort(ixs,:),1/dx);
-    wavenum_spec_vort_xshore_short = wavenum_spec_vort_xshore_short + mpsd2.'/numfiles;
-    
-end
-
-
-
-
-%% ??????  
-% check all vars here
 
 
 
