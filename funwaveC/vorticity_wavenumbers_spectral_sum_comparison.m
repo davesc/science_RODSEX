@@ -53,3 +53,22 @@ for ii = 3599:(3599+numfiles)
 end
 
 
+%% compare ring size vs vorticity variance with wavenumber range vs the
+% spectrum integrated over that range (variance)
+
+spec_partial_std = zeros(size(rsize));
+spec_partial_var_wavenum_limit = 1./(rsize);
+wavenum_limit =  zeros(size(rsize));
+dk = wavenums(2) - wavenums(1);
+for ii = 1:length(rsize)
+    [dump,imax] = min(abs(wavenums-spec_partial_var_wavenum_limit(ii)));
+    wavenum_limit(ii) = wavenums(imax);
+    spec_partial_std(ii) = sqrt(sum(wavenum_spec_vort_short_combined(2:imax)*dk));
+end
+
+figure(9); clf
+plot(spec_partial_var_wavenum_limit, stdvort, wavenum_limit, spec_partial_std)
+xlabel('1/ringSize, wavenum\_limit (1/m)')
+ylabel('vort std')
+
+
