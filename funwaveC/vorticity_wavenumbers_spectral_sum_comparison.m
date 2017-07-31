@@ -20,11 +20,14 @@ xi_frf = [xi_frf, xi_frf(end)-dx] + dx/2;
 numx = 585;
 numy = 1200;
 
+% index for ring location
+iring = 510;
 
 %% vorticity: "ring" averaged, and wavenumber spectra
 
 numfiles = 1900;
-datadir = '/Volumes/ThunderBay/fC_RODSEX_0928_D3_dx1p3/';
+datadir = '/Volumes/DAVIDCLARK/fC_RODSEX_0928_D3_dx1p3/';
+% datadir = '/Volumes/ThunderBay/fC_RODSEX_0928_D3_dx1p3/';
 % datadir = '~/Dropbox/RODSEX/funwaveC/';
 
 
@@ -126,7 +129,6 @@ wavenum_spec_vort_xshore_short_interp(1) = mean(wavenum_spec_vort_xshore_short(:
 wavenum_spec_vort_short_combined = wavenum_spec_vort_xshore_short_interp + mean(wavenum_spec_vort(ixs,:));
 
 
-
 %% compare ring size vs vorticity variance with wavenumber range vs the
 % spectrum integrated over that range (variance)
 
@@ -141,10 +143,24 @@ for ii = 1:length(rsize)
                    sqrt(sum(wavenum_spec_vort_short_combined(2:imax)*dk));
 end
 
+
+%% save vars for later
+
+
+% need to add indivudual vars for saving, this is a kludge
+clear vort
+save vorticity_wavenumbers_spectral_sum_comparison_data.mat
+
+
+
+%%
+load vorticity_wavenumbers_spectral_sum_comparison_data.mat
+
+%% figure: ring size vs wavenumber spectrum integral 
 figure(9); clf
 plot(spec_partial_var_wavenum_limit, stdvort, ...
      wavenum_limit, spec_partial_std)
 xlabel('1/ringSize, wavenum\_limit (1/m)')
-ylabel('vort std')
-
+ylabel('vort std (1/s)')
+legend('ring average','spectrum','location','southeast')
 
