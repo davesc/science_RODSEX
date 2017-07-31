@@ -53,6 +53,21 @@ for ii = 3599:(3599+numfiles)
 end
 
 
+%% get vorticity std over various "ring" averaging areas 
+
+% vorticity std inside "ring", over space (one alongshore transect)
+% and time 
+stdvort = zeros(length(RING),1);
+% length of one size of averaging area
+rsize = zeros(length(RING),1);
+for ii = 1:length(RING)
+    stdvort(ii) = std(RING(ii).vort(:));
+    rsize(ii) = RING(ii).bin_length*dx;
+end
+
+figure(3); clf
+plot(rsize,stdvort)
+
 %% compare ring size vs vorticity variance with wavenumber range vs the
 % spectrum integrated over that range (variance)
 
