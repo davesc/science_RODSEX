@@ -4,15 +4,15 @@
 h = load('~/Dropbox/RODSEX/survey/funwaveC_bathy/bathy_RODSEX_0925_09281600_1D_D_dx1p3.depth');
 
 
-% don't need this right now, but might be useful later
-%{
+
+
 % xi_frf x-coord of model bathy in frf coords
 load ~/Dropbox/RODSEX/survey/funwaveC_bathy/bathy_RODSEX_0925_09281600_1D_xifrf_D_dx1p3.mat
-% get rid of the sponge layer and the swash
-% the sponge is 5 gridpoints long, and the swash extends another 10
-xi_frf(570:end) = NaN; 
+% % get rid of the sponge layer and the swash
+% % the sponge is 5 gridpoints long, and the swash extends another 10
+% xi_frf(570:end) = NaN; 
 xi_frf = [xi_frf, xi_frf(end)-dx] + dx/2;
-%}
+
 
 % model params
 dx = 1.33333;
@@ -130,32 +130,31 @@ short_for_interp(1) = short_for_interp(2); % remove mean and extrapolate
 wavenum_spec_vort_xshore_short_interp = interp1(wavenums_x_short,short_for_interp,wavenums,'linear','extrap');
 wavenum_spec_vort_xshore_short_interp(1) = mean(wavenum_spec_vort_xshore_short(:,1)); % put the mean back in
 
-% TODO: average alognshore spectra over cross-shore region of "ring" average
-wavenum_spec_vort_short_combined = wavenum_spec_vort_xshore_short_interp + mean(wavenum_spec_vort(ixs,:));
 
 
 %% compare ring size vs vorticity variance with wavenumber range vs the
 % spectrum integrated over that range (variance)
 
+ring_wavenumber = 1./(rsize);
 spec_partial_std = zeros(size(rsize));
-spec_partial_var_wavenum_limit = 1./(rsize);
 wavenum_limit =  zeros(size(rsize));
 dk = wavenums(2) - wavenums(1);
 for ii = 1:length(rsize)
-    [dump,imax] = min(abs(wavenums-spec_partial_var_wavenum_limit(ii)));
+    [dump,imax] = min(abs(wavenums-ring_wavenumber(ii)));
     wavenum_limit(ii) = wavenums(imax);
-    spec_partial_std(ii) = ...
-                   sqrt(sum(wavenum_spec_vort_short_combined(2:imax)*dk));
+%     spec_partial_std(ii) = sqrt(sum(wavenum_spec_vort_short_combined(2:imax)*dk));
+    spec_partial_std(ii) = sqrt(sum(wavenum_spec_vort_xshore_short_interp(2:imax) +  mean(wavenum_spec_vort(RING(ii).i,2:imax)))*dk);
 end
 
 
 %% save vars for later
 
 
-% need to add indivudual vars for saving, this is a kludge
-clear vort
-save ~/Dropbox/RODSEX/funwaveC/vorticity_wavenumbers_spectral_sum_comparison_data.mat
-
+save ~/Dropbox/RODSEX/funwaveC/vorticity_wavenumbers_spectral_sum_comparison_data.mat ...
+    RING dx dy h iring ixs numx numy ring_wavenumber rsize spec_partial_std ...
+    stdvort vort_ring wavenum_limit wavenum_spec_vort ...
+    wavenum_spec_vort_xshore_short wavenum_spec_vort_xshore_short_interp ...
+    wavenums wavenums_x_short xi_frf
 
 
 %%
@@ -163,7 +162,7 @@ load ~/Dropbox/RODSEX/funwaveC/vorticity_wavenumbers_spectral_sum_comparison_dat
 
 %% figure: ring size vs wavenumber spectrum integral 
 figure(9); clf
-plot(spec_partial_var_wavenum_limit, stdvort, ...
+plot(ring_wavenumber, stdvort, ...
      wavenum_limit, spec_partial_std)
 xlabel('1/ringSize, wavenum\_limit (1/m)')
 ylabel('vort std (1/s)')
