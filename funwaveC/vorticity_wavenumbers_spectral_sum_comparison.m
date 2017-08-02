@@ -3,20 +3,20 @@
 %% load bathy and dimensions
 h = load('~/Dropbox/RODSEX/survey/funwaveC_bathy/bathy_RODSEX_0925_09281600_1D_D_dx1p3.depth');
 
+
+% don't need this right now, but might be useful later
+%{
 % xi_frf x-coord of model bathy in frf coords
 load ~/Dropbox/RODSEX/survey/funwaveC_bathy/bathy_RODSEX_0925_09281600_1D_xifrf_D_dx1p3.mat
-
 % get rid of the sponge layer and the swash
-% the sponge is 5 gridpoints long, and the swash seems to extend another 10
+% the sponge is 5 gridpoints long, and the swash extends another 10
 xi_frf(570:end) = NaN; 
-
-dx = 1.33333;
-
-dy = 1.33333;
-
 xi_frf = [xi_frf, xi_frf(end)-dx] + dx/2;
+%}
 
-
+% model params
+dx = 1.33333;
+dy = 1.33333;
 numx = 585;
 numy = 1200;
 
@@ -53,8 +53,11 @@ else
     stop=(sd+1)/2;
 end
 
-% cross-shore indecies for region near ring
-ixs = 510-20:510+20; 
+% cross-shore indecies for region near ring, where the cross-shore
+% wavenumber spectrum will be calculated. The ring location at index 510 is
+% roughly the max alongshore vorticity variance (near k=0.027 1/m), and
+% decreases by about 50% at +-30 cross-shore grid-points.
+ixs = 510-30:510+30; 
 % stop2 = cross-shore spectrum length
 sd2 = length(ixs);
 if mod(sd2,2)==0               % only half the data is good
@@ -63,6 +66,8 @@ else
     stop2=(sd2+1)/2;
 end
 
+%window the crosshore vort before spectrum
+w = repmat(hanning(length(ixs)),1,size(vort,2));
 
 % initialize vars
 n=0;
@@ -88,8 +93,8 @@ for ii = 3599:(3599+numfiles)
     [mpsd,wavenums]=mypsd(vort(:,:).',1/dy);
     wavenum_spec_vort = wavenum_spec_vort + mpsd.'/numfiles;
     
-    % cross-shore wavenumber spectra
-    [mpsd2,wavenums_x_short]=mypsd(vort(ixs,:),1/dx);
+    % cross-shore wavenumber spectra, using cross-shore hanning window
+    [mpsd2,wavenums_x_short]=mypsd(vort(ixs,:).*w,1/dx);
     wavenum_spec_vort_xshore_short = wavenum_spec_vort_xshore_short + mpsd2.'/numfiles;
  
 end
@@ -125,7 +130,7 @@ short_for_interp(1) = short_for_interp(2); % remove mean and extrapolate
 wavenum_spec_vort_xshore_short_interp = interp1(wavenums_x_short,short_for_interp,wavenums,'linear','extrap');
 wavenum_spec_vort_xshore_short_interp(1) = mean(wavenum_spec_vort_xshore_short(:,1)); % put the mean back in
 
-
+% TODO: average alognshore spectra over cross-shore region of "ring" average
 wavenum_spec_vort_short_combined = wavenum_spec_vort_xshore_short_interp + mean(wavenum_spec_vort(ixs,:));
 
 
@@ -149,12 +154,12 @@ end
 
 % need to add indivudual vars for saving, this is a kludge
 clear vort
-save vorticity_wavenumbers_spectral_sum_comparison_data.mat
+save ~/Dropbox/RODSEX/funwaveC/vorticity_wavenumbers_spectral_sum_comparison_data.mat
 
 
 
 %%
-load vorticity_wavenumbers_spectral_sum_comparison_data.mat
+load ~/Dropbox/RODSEX/funwaveC/vorticity_wavenumbers_spectral_sum_comparison_data.mat
 
 %% figure: ring size vs wavenumber spectrum integral 
 figure(9); clf
