@@ -11,7 +11,7 @@ colorbar;
 shading flat;
 ylabel('FRF xshore (m)')
 xlabel('vort wavenumber spectrum (m/s^2)')
-caxis([-7 0])
+caxis([-7 -.5])
 hold on
 plot([0 0.7],[xi_frf(510), xi_frf(510)],'--k')
 text(0.55,xi_frf(510)+10,'ring location')
@@ -44,7 +44,24 @@ ylabel('spectralSum / ringAverage ')
 
 
 
+%% snap vorticity plot
+
+datadir = '~/Dropbox/RODSEX/funwaveC/';
+
+figure(4); clf
+
+for ii = 1:100
+load(sprintf('%ssnap_vort_l2_%4.0f.mat',datadir,3599+ii))
 
 
+pcolor((1:1200)*dy,xi_frf,vort);
+axis([1 400 100 500])
+shading flat
+colormap jet
+% axis equal 
+colorbar
+caxis([-.2, .2])
+pause(.1)
 
+end
 
