@@ -30,38 +30,38 @@ xlabel('wavenumbers (1/m)')
 figure(3); clf
 
 subplot(121)
-plot(spec_partial_var_wavenum_limit, stdvort, ...
+plot(ring_wavenumber, stdvort, ...
      wavenum_limit, spec_partial_std)
 xlabel('1/ringSize, wavenum\_limit (1/m)')
 ylabel('vort std (1/s)')
 legend('ring average','spectrum','location','southeast')
 
 subplot(122)
-interp_stdvort = interp1(spec_partial_var_wavenum_limit, stdvort, wavenum_limit);
+interp_stdvort = interp1(ring_wavenumber, stdvort, wavenum_limit);
 plot(wavenum_limit, spec_partial_std./interp_stdvort)
 xlabel('wavenumber(1/m)')
 ylabel('spectralSum / ringAverage ')
 
 
 
-%% snap vorticity plot
+%% snap vorticity plot, quick n dirty animation from old files on Dropbox
 
-datadir = '~/Dropbox/RODSEX/funwaveC/';
-
-figure(4); clf
-
-for ii = 1:100
-load(sprintf('%ssnap_vort_l2_%4.0f.mat',datadir,3599+ii))
-
-
-pcolor((1:1200)*dy,xi_frf,vort);
-axis([1 400 100 500])
-shading flat
-colormap jet
-% axis equal 
-colorbar
-caxis([-.2, .2])
-pause(.1)
-
-end
+% datadir = '~/Dropbox/RODSEX/funwaveC/';
+% 
+% figure(4); clf
+% 
+% for ii = 1:100
+% load(sprintf('%ssnap_vort_l2_%4.0f.mat',datadir,3599+ii))
+% 
+% 
+% pcolor((1:1200)*dy,xi_frf,vort);
+% axis([1 400 100 500])
+% shading flat
+% colormap jet
+% % axis equal 
+% colorbar
+% caxis([-.2, .2])
+% pause(.1)
+% 
+% end
 
