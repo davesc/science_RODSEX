@@ -74,7 +74,7 @@ n=0;
 vort_ring = zeros(numfiles,60);
 wavenum_spec_vort = zeros(size(vort,1),stop);
 wavenum_spec_vort_xshore_short = zeros(numy,stop2);
-
+% total_var = 0;
 
 for ii = 3599:(3599+numfiles)
     n=n+1;
@@ -90,30 +90,37 @@ for ii = 3599:(3599+numfiles)
     end
     
     % alongshore wavenumber spectra
-    [mpsd,wavenums]=mypsd(vort(:,:).',1/dy);
+    [mpsd,wavenums]=mypsd(vort.',dy);
+    [mpsd,wavenums]=mywelch(vort.',dy,1,0);
     wavenum_spec_vort = wavenum_spec_vort + mpsd.'/numfiles;
     
     % cross-shore wavenumber spectra, using cross-shore hanning window
-    [mpsd2,wavenums_x_short]=mypsd(vort(ixs,:).*w,1/dx);
+    winvort0 = detrend(vort(ixs,:).*w);
+    var0 = var(vort(ixs,:));
+    var1 = var(winvort0);
+    winvort1 = winvort0.*repmat(sqrt(var0./var1),length(ixs),1);
+    [mpsd2,wavenums_x_short]=mypsd(winvort1,dx);
     wavenum_spec_vort_xshore_short = wavenum_spec_vort_xshore_short + mpsd2.'/numfiles;
- 
+    
+    
+    
 end
 
 
-%% get vorticity std over various "ring" averaging areas 
+%% get vorticity variance over various "ring" averaging areas 
 
-% vorticity std inside "ring", over space (one alongshore transect)
+% vorticity var inside "ring", over space (one alongshore transect)
 % and time 
-stdvort = zeros(length(RING),1);
+varvort = zeros(length(RING),1);
 % length of one size of averaging area
 rsize = zeros(length(RING),1);
 for ii = 1:length(RING)
-    stdvort(ii) = std(RING(ii).vort(:));
+    varvort(ii) = var(RING(ii).vort(:));
     rsize(ii) = RING(ii).bin_length*dx;
 end
 
 figure(3); clf
-plot(rsize,stdvort)
+plot(rsize,varvort)
 
 
 
@@ -127,7 +134,7 @@ short_for_interp = mean(wavenum_spec_vort_xshore_short);
 short_for_interp(1) = short_for_interp(2); % remove mean and extrapolate
 
 
-wavenum_spec_vort_xshore_short_interp = interp1(wavenums_x_short,short_for_interp,wavenums,'linear','extrap');
+wavenum_spec_vort_xshore_short_interp = interp1(wavenums_x_short,short_for_interp,wavenums,'spline','extrap');
 wavenum_spec_vort_xshore_short_interp(1) = mean(wavenum_spec_vort_xshore_short(:,1)); % put the mean back in
 
 
@@ -136,14 +143,18 @@ wavenum_spec_vort_xshore_short_interp(1) = mean(wavenum_spec_vort_xshore_short(:
 % spectrum integrated over that range (variance)
 
 ring_wavenumber = 1./(rsize);
-spec_partial_std = zeros(size(rsize));
+spec_partial_var = zeros(size(rsize));
 wavenum_limit =  zeros(size(rsize));
+spec_partial_var_alongshore_only = zeros(size(rsize));
+spec_partial_var_xshore_only = zeros(size(rsize));
 dk = wavenums(2) - wavenums(1);
 for ii = 1:length(rsize)
     [dump,imax] = min(abs(wavenums-ring_wavenumber(ii)));
     wavenum_limit(ii) = wavenums(imax);
-%     spec_partial_std(ii) = sqrt(sum(wavenum_spec_vort_short_combined(2:imax)*dk));
-    spec_partial_std(ii) = sqrt(sum(wavenum_spec_vort_xshore_short_interp(2:imax) +  mean(wavenum_spec_vort(RING(ii).i,2:imax)))*dk);
+    spec_partial_var(ii) = (sum(wavenum_spec_vort_xshore_short_interp(2:imax) + mean(wavenum_spec_vort(RING(ii).i,2:imax)))*dk);
+    spec_partial_var_alongshore_only(ii) = (sum(mean(wavenum_spec_vort(RING(ii).i,2:imax),1))*dk);
+    spec_partial_var_xshore_only(ii) = (sum(wavenum_spec_vort_xshore_short_interp(2:imax))*dk);
+    
 end
 
 
@@ -151,10 +162,11 @@ end
 
 
 save ~/Dropbox/RODSEX/funwaveC/vorticity_wavenumbers_spectral_sum_comparison_data.mat ...
-    RING dx dy h iring ixs numx numy ring_wavenumber rsize spec_partial_std ...
-    stdvort vort_ring wavenum_limit wavenum_spec_vort ...
+    RING dx dy h iring ixs numx numy ring_wavenumber rsize spec_partial_var ...
+    varvort vort_ring wavenum_limit wavenum_spec_vort ...
     wavenum_spec_vort_xshore_short wavenum_spec_vort_xshore_short_interp ...
-    wavenums wavenums_x_short xi_frf
+    wavenums wavenums_x_short xi_frf spec_partial_var_alongshore_only ...
+    spec_partial_var_xshore_only
 
 
 %%
@@ -162,9 +174,27 @@ load ~/Dropbox/RODSEX/funwaveC/vorticity_wavenumbers_spectral_sum_comparison_dat
 
 %% figure: ring size vs wavenumber spectrum integral 
 figure(9); clf
-plot(ring_wavenumber, stdvort, ...
-     wavenum_limit, spec_partial_std)
+plot(ring_wavenumber, varvort, ...
+     wavenum_limit, spec_partial_var_xshore_only ,wavenum_limit, spec_partial_var_alongshore_only)
 xlabel('1/ringSize, wavenum\_limit (1/m)')
-ylabel('vort std (1/s)')
-legend('ring average','spectrum','location','southeast')
+ylabel('vort variance (1/s^2)')
+legend('ring average','spectrum cross-shore','spectrum alognshore','location','southeast')
 
+%% compare total variance in cross and alongshore wavenumber spectra
+
+datadir = '/Volumes/DAVIDCLARK/fC_RODSEX_0928_D3_dx1p3/';
+% datadir = '/Volumes/ThunderBay/fC_RODSEX_0928_D3_dx1p3/';
+% datadir = '~/Dropbox/RODSEX/funwaveC/';
+load(sprintf('%ssnap_vort_l2_%4.0f.mat',datadir,3599+numfiles))
+
+% variance of last snapshot (all the snaps I checked had total variance
+% that was within a couple percent of eachother in the ring ixs area)
+v2 = vort(ixs,:);
+sprintf('total variance in ixs region = %f',var(v2(:)))
+
+% total variance in alongshore wavenumber spectra
+alongshore_spectra_total_var = sum(mean(wavenum_spec_vort(ixs,:)))*(wavenums(2)-wavenums(1))
+
+% total variance in xshore wavenumber spectra
+xshore_spectra_total_var = sum(mean(wavenum_spec_vort_xshore_short))*(wavenums_x_short(2)-wavenums_x_short(1))
+xshore_spectra_interp_total_var = sum(wavenum_spec_vort_xshore_short_interp)*(wavenums(2)-wavenums(1))
