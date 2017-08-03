@@ -16,11 +16,14 @@ hold on
 plot([0 0.7],[xi_frf(510), xi_frf(510)],'--k')
 text(0.55,xi_frf(510)+10,'ring location')
 
-%% xshore wavenumber spectrum
+%% wavenumber spectra
 
 figure(2); clf
-plot(wavenums_x_short,mean(wavenum_spec_vort_xshore_short))
-title('xshore vort wavenum spectra, centered on ring +-30m')
+plot(wavenums,mean(wavenum_spec_vort(ixs,:)), ...
+    wavenums_x_short,mean(wavenum_spec_vort_xshore_short), ...
+    wavenums,wavenum_spec_vort_xshore_short_interp,'--')
+legend('along','cross','cross-interp')
+title('vort wavenum spectra, xshore region centered on ring +-30m')
 ylabel('vorticity spectra (m/s^2)')
 xlabel('wavenumbers (1/m)')
 
@@ -30,15 +33,15 @@ xlabel('wavenumbers (1/m)')
 figure(3); clf
 
 subplot(121)
-plot(ring_wavenumber, stdvort, ...
-     wavenum_limit, spec_partial_std)
+plot(ring_wavenumber, varvort, ...
+     wavenum_limit, spec_partial_var)
 xlabel('1/ringSize, wavenum\_limit (1/m)')
-ylabel('vort std (1/s)')
+ylabel('vort var (1/s)')
 legend('ring average','spectrum','location','southeast')
 
 subplot(122)
-interp_stdvort = interp1(ring_wavenumber, stdvort, wavenum_limit);
-plot(wavenum_limit, spec_partial_std./interp_stdvort)
+interp_varvort = interp1(ring_wavenumber, varvort, wavenum_limit);
+plot(wavenum_limit, spec_partial_var./interp_varvort)
 xlabel('wavenumber(1/m)')
 ylabel('spectralSum / ringAverage ')
 
@@ -46,22 +49,28 @@ ylabel('spectralSum / ringAverage ')
 
 %% snap vorticity plot, quick n dirty animation from old files on Dropbox
 
-% datadir = '~/Dropbox/RODSEX/funwaveC/';
-% 
-% figure(4); clf
-% 
-% for ii = 1:100
-% load(sprintf('%ssnap_vort_l2_%4.0f.mat',datadir,3599+ii))
-% 
-% 
-% pcolor((1:1200)*dy,xi_frf,vort);
-% axis([1 400 100 500])
-% shading flat
-% colormap jet
-% % axis equal 
-% colorbar
-% caxis([-.2, .2])
-% pause(.1)
-% 
-% end
+datadir = '~/Dropbox/RODSEX/funwaveC/';
+
+figure(4); clf
+
+for ii = 1:100
+load(sprintf('%ssnap_vort_l2_%4.0f.mat',datadir,3599+ii))
+
+
+pcolor((1:1200)*dy,xi_frf,vort);
+axis([1 400 100 500])
+shading flat
+colormap jet
+% axis equal 
+colorbar
+caxis([-.2, .2])
+pause(.1)
+
+end
+
+%%
+
+
+
+
 
