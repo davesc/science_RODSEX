@@ -31,18 +31,6 @@ datadir = '/Volumes/DAVIDCLARK/fC_RODSEX_0928_D3_dx1p3/';
 % datadir = '~/Dropbox/RODSEX/funwaveC/';
 
 
-% make averaging areas
-RING = struct;
-for ii=1:25;
-    RING(ii).bin_length = (ii-1)*2+1; % odd numbers
-    RING(ii).i = (iring-(ii-1)):(iring+(ii-1));
-    RING(ii).j = 1:RING(ii).bin_length;
-    RING(ii).steps = floor(numy/RING(ii).bin_length);  
-    RING(ii).vort = zeros(numfiles,RING(ii).steps);
-end
-
-
-
 % load a file and calucluate one sided spectrum size
 load(sprintf('%ssnap_vort_l2_%4.0f.mat',datadir,3599))
 % stop = alongshore spectrum length
@@ -69,6 +57,24 @@ end
 %window the crosshore vort before spectrum
 w = repmat(hanning(length(ixs)),1,size(vort,2));
 
+
+
+% make averaging areas
+RING = struct;
+for ii=1:25;
+    RING(ii).bin_length = (ii-1)*2+1; % odd numbers
+    RING(ii).i = (iring-(ii-1)):(iring+(ii-1));
+    RING(ii).j = 1:RING(ii).bin_length;
+    RING(ii).jsteps = floor(numy/RING(ii).bin_length);
+    tmp = (length(ixs) - RING(ii).bin_length)/2;
+    RING(ii).isteps = -tmp:1:tmp;
+%     RING(ii).vort = zeros(numfiles,RING(ii).steps);
+    RING(ii).meanvort2 = 0;
+    RING(ii).meanvort = 0;
+    RING(ii).varvort = 0;
+end
+
+
 % initialize vars
 n=0;
 vort_ring = zeros(numfiles,60);
@@ -83,9 +89,19 @@ for ii = 3599:(3599+numfiles)
     
     % ring averages
     for jj = 1:length(RING) 
-        for kk = 0:(RING(jj).steps-1);
-            RING(jj).vort(n,kk+1) = sum(sum(vort(RING(jj).i,RING(jj).j ...
-                + (RING(jj).bin_length*kk))))/(RING(jj).bin_length.^2);
+%         for kk = 0:(RING(jj).jsteps-1);
+%             RING(jj).vort(n,kk+1) = sum(sum(vort(RING(jj).i,RING(jj).j ...
+%                 + (RING(jj).bin_length*kk))))/(RING(jj).bin_length.^2);
+%         end
+        for kk = 0:(RING(jj).jsteps-1);
+            for ll = 1:length(RING(jj).isteps);
+                RING(jj).meanvort2 = RING(jj).meanvort2 ...
+                                + sum(sum(vort(RING(jj).i + RING(jj).isteps(ll), RING(jj).j + (RING(jj).bin_length*kk)).^2))...
+                                /(RING(jj).bin_length.^2 * numfiles * length(RING(jj).isteps) * length(RING(jj).jsteps));
+                RING(jj).meanvort = RING(jj).meanvort ...
+                                + sum(sum(vort(RING(jj).i + RING(jj).isteps(ll), RING(jj).j + (RING(jj).bin_length*kk))))...
+                                /(RING(jj).bin_length.^2 * numfiles * length(RING(jj).isteps) * length(RING(jj).jsteps));
+            end
         end
     end
     
@@ -109,13 +125,24 @@ end
 
 %% get vorticity variance over various "ring" averaging areas 
 
+% % vorticity var inside "ring", over space (one alongshore transect)
+% % and time 
+% varvort = zeros(length(RING),1);
+% % length of one size of averaging area
+% rsize = zeros(length(RING),1);
+% for ii = 1:length(RING)
+%     varvort(ii) = var(RING(ii).vort(:));
+%     rsize(ii) = RING(ii).bin_length*dx;
+% end
+
 % vorticity var inside "ring", over space (one alongshore transect)
 % and time 
 varvort = zeros(length(RING),1);
 % length of one size of averaging area
 rsize = zeros(length(RING),1);
 for ii = 1:length(RING)
-    varvort(ii) = var(RING(ii).vort(:));
+    RING(ii).varvort = RING(ii).meanvort2 - RING(ii).meanvort;
+    varvort(ii) = RING(ii).varvort;
     rsize(ii) = RING(ii).bin_length*dx;
 end
 
@@ -143,7 +170,7 @@ wavenum_spec_vort_xshore_short_interp(1) = mean(wavenum_spec_vort_xshore_short(:
 % spectrum integrated over that range (variance)
 
 ring_wavenumber = 1./(rsize);
-spec_partial_var = zeros(size(rsize));
+% spec_partial_var = zeros(size(rsize));
 wavenum_limit =  zeros(size(rsize));
 spec_partial_var_alongshore_only = zeros(size(rsize));
 spec_partial_var_xshore_only = zeros(size(rsize));
@@ -151,8 +178,9 @@ dk = wavenums(2) - wavenums(1);
 for ii = 1:length(rsize)
     [dump,imax] = min(abs(wavenums-ring_wavenumber(ii)));
     wavenum_limit(ii) = wavenums(imax);
-    spec_partial_var(ii) = (sum(wavenum_spec_vort_xshore_short_interp(2:imax) + mean(wavenum_spec_vort(RING(ii).i,2:imax)))*dk);
-    spec_partial_var_alongshore_only(ii) = (sum(mean(wavenum_spec_vort(RING(ii).i,2:imax),1))*dk);
+%     spec_partial_var(ii) = (sum(wavenum_spec_vort_xshore_short_interp(2:imax) + mean(wavenum_spec_vort(RING(ii).i,2:imax)))*dk);
+%     spec_partial_var_alongshore_only(ii) = (sum(mean(wavenum_spec_vort(RING(ii).i,2:imax),1))*dk);
+    spec_partial_var_alongshore_only(ii) = (sum(mean(wavenum_spec_vort(ixs,2:imax),1))*dk);
     spec_partial_var_xshore_only(ii) = (sum(wavenum_spec_vort_xshore_short_interp(2:imax))*dk);
     
 end
@@ -162,11 +190,11 @@ end
 
 
 save ~/Dropbox/RODSEX/funwaveC/vorticity_wavenumbers_spectral_sum_comparison_data.mat ...
-    RING dx dy h iring ixs numx numy ring_wavenumber rsize spec_partial_var ...
+    RING dx dy h iring ixs numx numy ring_wavenumber rsize ...
     varvort vort_ring wavenum_limit wavenum_spec_vort ...
     wavenum_spec_vort_xshore_short wavenum_spec_vort_xshore_short_interp ...
     wavenums wavenums_x_short xi_frf spec_partial_var_alongshore_only ...
-    spec_partial_var_xshore_only
+    spec_partial_var_xshore_only %spec_partial_var
 
 
 %%
