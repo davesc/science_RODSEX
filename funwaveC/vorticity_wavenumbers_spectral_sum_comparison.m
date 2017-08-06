@@ -3,17 +3,6 @@
 %% load bathy and dimensions
 h = load('~/Dropbox/RODSEX/survey/funwaveC_bathy/bathy_RODSEX_0925_09281600_1D_D_dx1p3.depth');
 
-
-
-
-% xi_frf x-coord of model bathy in frf coords
-load ~/Dropbox/RODSEX/survey/funwaveC_bathy/bathy_RODSEX_0925_09281600_1D_xifrf_D_dx1p3.mat
-% % get rid of the sponge layer and the swash
-% % the sponge is 5 gridpoints long, and the swash extends another 10
-% xi_frf(570:end) = NaN; 
-xi_frf = [xi_frf, xi_frf(end)-dx] + dx/2;
-
-
 % model params
 dx = 1.33333;
 dy = 1.33333;
@@ -22,6 +11,17 @@ numy = 1200;
 
 % index for ring location
 iring = 510;
+
+
+% xi_frf x-coord of model bathy in frf coords
+load ~/Dropbox/RODSEX/survey/funwaveC_bathy/bathy_RODSEX_0925_09281600_1D_xifrf_D_dx1p3.mat
+% % get rid of the sponge layer and the swash
+% % the sponge is 5 gridpoints long, and the swash extends another 10
+xi_frf(570:end) = NaN; 
+xi_frf = [xi_frf, xi_frf(end)-dx] + dx/2;
+
+
+
 
 %% vorticity: "ring" averaged, and wavenumber spectra
 
@@ -71,9 +71,15 @@ for ii=1:25;
 %     RING(ii).vort = zeros(numfiles,RING(ii).steps);
     RING(ii).meanvort2 = 0;
     RING(ii).meanvort = 0;
+    RING(ii).meanvort_all = zeros(numfiles,1);
     RING(ii).varvort = 0;
+%     RING(ii).avg_filter = ones(RING(ii).bin_length) ...
+%         / ( (length(ixs) - RING(ii).bin_length + 1) * (numy - RING(ii).bin_length + 1) * numfiles); 
+%     RING(ii).avg_area = false(length(ixs),numy);
+%     RING(ii).avg_area(ceil(RING(ii).bin_length/2):(length(ixs)-floor(RING(ii).bin_length/2)), ceil(RING(ii).bin_length/2):(numy-floor(RING(ii).bin_length/2))) = true; 
+%     RING(ii).filter_weight = 1 / ( (length(ixs) - RING(ii).bin_length + 1) * (numy - RING(ii).bin_length + 1) * numfiles * RING(ii).bin_length.^2);
+%     RING(ii).filter_weight = 1 / (length(ixs) * numy * numfiles * RING(ii).bin_length.^2);
 end
-
 
 % initialize vars
 n=0;
@@ -81,33 +87,64 @@ vort_ring = zeros(numfiles,60);
 wavenum_spec_vort = zeros(size(vort,1),stop);
 wavenum_spec_vort_xshore_short = zeros(numy,stop2);
 % total_var = 0;
+sz = length(ixs) * numy;
 
 for ii = 3599:(3599+numfiles)
     n=n+1;
     fprintf('%g\n',ii)
     load(sprintf('%ssnap_vort_l2_%4.0f.mat',datadir,ii))
+    vort1 = vort(ixs,:);
+    vort2 = vort1.^2;
     
     % ring averages
     for jj = 1:length(RING) 
+        
+%         % convolve averaging filter and add to total
+%         RING(jj).meanvort2 = RING(jj).meanvort2 + sum(sum(conv2(vort2(ixs,:),RING(jj).avg_filter,'valid')));
+%         RING(jj).meanvort = RING(jj).meanvort + sum(sum(conv2(vort(ixs,:),RING(jj).avg_filter,'valid')));
+
+%         % use image box filter to get means
+%         tmp = imboxfilt(vort1, RING(jj).bin_length, 'NormalizationFactor',RING(jj).filter_weight);
+%         RING(jj).meanvort = RING(jj).meanvort + sum(sum(tmp.*RING(jj).avg_area));
+% 
+%         tmp = imboxfilt(vort2, RING(jj).bin_length, 'NormalizationFactor',RING(jj).filter_weight);
+%         RING(jj).meanvort2 = RING(jj).meanvort2 + sum(sum(tmp.*RING(jj).avg_area));
+%         
+        % use image box filter to get means
+        tmp1 = imboxfilt(vort1, RING(jj).bin_length,'padding','symmetric');
+        RING(jj).varvort = RING(jj).varvort + (sum(sum((tmp1 - sum(sum(tmp1))/sz ).^2))/sz  / numfiles);
+        RING(jj).meanvort_all(ii) = sum(sum(tmp1))/sz;
+%         
+%         RING(jj).meanvort2 = RING(jj).meanvort2 + sum(sum(tmp1.^2))/(length(ixs) * numy * numfiles);
+
+        % I think this is wrong: I should be taking the square after the
+        % ring area average
+%         tmp2 = imboxfilt(vort2, RING(jj).bin_length,'padding','symmetric');
+%         RING(jj).meanvort2 = RING(jj).meanvort2 + sum(sum(tmp2))/(length(ixs) * numy * numfiles);
+
+        
+% %         for kk = 0:(RING(jj).jsteps-1);
+% %             RING(jj).vort(n,kk+1) = sum(sum(vort(RING(jj).i,RING(jj).j ...
+% %                 + (RING(jj).bin_length*kk))))/(RING(jj).bin_length.^2);
+% %         end
 %         for kk = 0:(RING(jj).jsteps-1);
-%             RING(jj).vort(n,kk+1) = sum(sum(vort(RING(jj).i,RING(jj).j ...
-%                 + (RING(jj).bin_length*kk))))/(RING(jj).bin_length.^2);
+%             for ll = 1:length(RING(jj).isteps);
+%                 RING(jj).meanvort2 = RING(jj).meanvort2 ...
+%                                 + sum(sum(vort(RING(jj).i + RING(jj).isteps(ll), RING(jj).j + (RING(jj).bin_length*kk)).^2))...
+%                                 /(RING(jj).bin_length.^2 * numfiles * length(RING(jj).isteps) * length(RING(jj).jsteps));
+%                 RING(jj).meanvort = RING(jj).meanvort ...
+%                                 + sum(sum(vort(RING(jj).i + RING(jj).isteps(ll), RING(jj).j + (RING(jj).bin_length*kk))))...
+%                                 /(RING(jj).bin_length.^2 * numfiles * length(RING(jj).isteps) * length(RING(jj).jsteps));
+%             end
 %         end
-        for kk = 0:(RING(jj).jsteps-1);
-            for ll = 1:length(RING(jj).isteps);
-                RING(jj).meanvort2 = RING(jj).meanvort2 ...
-                                + sum(sum(vort(RING(jj).i + RING(jj).isteps(ll), RING(jj).j + (RING(jj).bin_length*kk)).^2))...
-                                /(RING(jj).bin_length.^2 * numfiles * length(RING(jj).isteps) * length(RING(jj).jsteps));
-                RING(jj).meanvort = RING(jj).meanvort ...
-                                + sum(sum(vort(RING(jj).i + RING(jj).isteps(ll), RING(jj).j + (RING(jj).bin_length*kk))))...
-                                /(RING(jj).bin_length.^2 * numfiles * length(RING(jj).isteps) * length(RING(jj).jsteps));
-            end
-        end
     end
     
     % alongshore wavenumber spectra
+    % TODO: need to check if mypsd and mywelch are ginving similar results
+    %%%%%%%%%%
     [mpsd,wavenums]=mypsd(vort.',dy);
     [mpsd,wavenums]=mywelch(vort.',dy,1,0);
+    %%%%%%%%%
     wavenum_spec_vort = wavenum_spec_vort + mpsd.'/numfiles;
     
     % cross-shore wavenumber spectra, using cross-shore hanning window
@@ -115,7 +152,11 @@ for ii = 3599:(3599+numfiles)
     var0 = var(vort(ixs,:));
     var1 = var(winvort0);
     winvort1 = winvort0.*repmat(sqrt(var0./var1),length(ixs),1);
+    % TODO: need to check if mypsd and mywelch are ginving similar results
+    %%%%%%%%%%
     [mpsd2,wavenums_x_short]=mypsd(winvort1,dx);
+    [mpsd2,wavenums_x_short]=mywelch(vort(ixs,:),dx,1,0);
+    %%%%%%%%%%
     wavenum_spec_vort_xshore_short = wavenum_spec_vort_xshore_short + mpsd2.'/numfiles;
     
     
@@ -138,11 +179,16 @@ end
 % vorticity var inside "ring", over space (one alongshore transect)
 % and time 
 varvort = zeros(length(RING),1);
+meanvort = zeros(length(RING),1);
+meanvort2 = zeros(length(RING),1);
 % length of one size of averaging area
 rsize = zeros(length(RING),1);
 for ii = 1:length(RING)
-    RING(ii).varvort = RING(ii).meanvort2 - RING(ii).meanvort;
+%     RING(ii).varvort = RING(ii).meanvort2 - RING(ii).meanvort;
     varvort(ii) = RING(ii).varvort;
+    var_meanvort_all(ii) = var(RING(ii).meanvort_all);
+%     meanvort(ii) = RING(ii).meanvort;
+%     meanvort2(ii) = RING(ii).meanvort2;
     rsize(ii) = RING(ii).bin_length*dx;
 end
 
