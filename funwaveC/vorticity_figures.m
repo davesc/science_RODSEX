@@ -23,7 +23,7 @@ plot(wavenums,mean(wavenum_spec_vort(ixs,:)), ...
     wavenums_x_short,mean(wavenum_spec_vort_xshore_short), ...
     wavenums,wavenum_spec_vort_xshore_short_interp,'--')
 legend('along','cross','cross-interp')
-title('vort wavenum spectra, xshore region centered on ring +-30m')
+title('xshore vort wavenum spectra, centered on ring +-30m')
 ylabel('vorticity spectra (m/s^2)')
 xlabel('wavenumbers (1/m)')
 
@@ -34,10 +34,10 @@ figure(3); clf
 
 subplot(121)
 plot(ring_wavenumber, varvort, ...
-     wavenum_limit, spec_partial_var)
+     wavenum_limit, spec_partial_var_xshore_only ,wavenum_limit, spec_partial_var_alongshore_only)
 xlabel('1/ringSize, wavenum\_limit (1/m)')
-ylabel('vort var (1/s)')
-legend('ring average','spectrum','location','southeast')
+ylabel('vort variance (1/s^2)')
+legend('ring average','spectrum cross-shore','spectrum alognshore','location','southeast')
 
 subplot(122)
 interp_varvort = interp1(ring_wavenumber, varvort, wavenum_limit);
