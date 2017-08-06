@@ -5,7 +5,10 @@ load ~/Dropbox/RODSEX/funwaveC/vorticity_wavenumbers_spectral_sum_comparison_dat
 %% alongshore wavenumber spectrum
 
 figure(1); clf
-pcolor(wavenums(2:end),xi_frf,log10(wavenum_spec_vort(:,2:end))); 
+% note when spectrum is processed with mywelch instead of mypsd need
+% wavenum_spec_vort(2:end-1,) to avoid nans in pcolor
+pcolor(wavenums(2:end),xi_frf(2:end-1),log10(wavenum_spec_vort(2:end-1,2:end))); 
+% pcolor(wavenums(2:end),xi_frf,log10(wavenum_spec_vort(:,2:end))); 
 colormap jet; 
 colorbar;
 shading flat;
@@ -41,10 +44,11 @@ legend('ring average','spectrum cross-shore','spectrum alognshore','location','s
 
 subplot(122)
 interp_varvort = interp1(ring_wavenumber, varvort, wavenum_limit);
-plot(wavenum_limit, spec_partial_var./interp_varvort)
+plot(wavenum_limit, spec_partial_var_alongshore_only./interp_varvort, ...
+     wavenum_limit, spec_partial_var_xshore_only./interp_varvort)
 xlabel('wavenumber(1/m)')
 ylabel('spectralSum / ringAverage ')
-
+legend('alongshore','cross-shore')
 
 
 %% snap vorticity plot, quick n dirty animation from old files on Dropbox
