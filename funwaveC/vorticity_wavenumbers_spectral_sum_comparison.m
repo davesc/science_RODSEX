@@ -111,6 +111,8 @@ for ii = 3599:(3599+numfiles)
 %         RING(jj).meanvort2 = RING(jj).meanvort2 + sum(sum(tmp.*RING(jj).avg_area));
 %         
         % use image box filter to get means
+        % TODO: check that the mirrored edged on the imboxfilt make sense
+        % mabye try using just the valid convolution area 
         tmp1 = imboxfilt(vort1, RING(jj).bin_length,'padding','symmetric');
         RING(jj).varvort = RING(jj).varvort + (sum(sum((tmp1 - sum(sum(tmp1))/sz ).^2))/sz  / numfiles);
         RING(jj).meanvort_all(ii) = sum(sum(tmp1))/sz;
