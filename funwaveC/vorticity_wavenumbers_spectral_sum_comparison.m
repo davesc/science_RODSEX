@@ -26,8 +26,8 @@ xi_frf = [xi_frf, xi_frf(end)-dx] + dx/2;
 %% vorticity: "ring" averaged, and wavenumber spectra
 
 numfiles = 1900;
-datadir = '/Volumes/DAVIDCLARK/fC_RODSEX_0928_D3_dx1p3/';
-% datadir = '/Volumes/ThunderBay/fC_RODSEX_0928_D3_dx1p3/';
+% datadir = '/Volumes/DAVIDCLARK/fC_RODSEX_0928_D3_dx1p3/';
+datadir = '/Volumes/ThunderBay/fC_RODSEX_0928_D3_dx1p3/';
 % datadir = '~/Dropbox/RODSEX/funwaveC/';
 
 
@@ -73,10 +73,12 @@ for ii=1:25;
     RING(ii).meanvort = 0;
     RING(ii).meanvort_all = zeros(numfiles,1);
     RING(ii).varvort = 0;
+    RING(ii).varvort_valid = 0;
 %     RING(ii).avg_filter = ones(RING(ii).bin_length) ...
 %         / ( (length(ixs) - RING(ii).bin_length + 1) * (numy - RING(ii).bin_length + 1) * numfiles); 
-%     RING(ii).avg_area = false(length(ixs),numy);
-%     RING(ii).avg_area(ceil(RING(ii).bin_length/2):(length(ixs)-floor(RING(ii).bin_length/2)), ceil(RING(ii).bin_length/2):(numy-floor(RING(ii).bin_length/2))) = true; 
+    RING(ii).avg_area = false(length(ixs),numy);
+    RING(ii).avg_area(ceil(RING(ii).bin_length/2):(length(ixs)-floor(RING(ii).bin_length/2)), ceil(RING(ii).bin_length/2):(numy-floor(RING(ii).bin_length/2))) = true; 
+    RING(ii).avg_area_num = sum(RING(ii).avg_area(:));
 %     RING(ii).filter_weight = 1 / ( (length(ixs) - RING(ii).bin_length + 1) * (numy - RING(ii).bin_length + 1) * numfiles * RING(ii).bin_length.^2);
 %     RING(ii).filter_weight = 1 / (length(ixs) * numy * numfiles * RING(ii).bin_length.^2);
 end
@@ -116,6 +118,12 @@ for ii = 3599:(3599+numfiles)
         tmp1 = imboxfilt(vort1, RING(jj).bin_length,'padding','symmetric');
         RING(jj).varvort = RING(jj).varvort + (sum(sum((tmp1 - sum(sum(tmp1))/sz ).^2))/sz  / numfiles);
         RING(jj).meanvort_all(ii) = sum(sum(tmp1))/sz;
+        
+        % this uses the valid portion of the convolution in the center of
+        % the sampling area (both methods yield similar results)
+        RING(jj).varvort_valid = RING(jj).varvort_valid + (sum(sum((tmp1(RING(jj).avg_area) - sum(sum(tmp1(RING(jj).avg_area)))/RING(jj).avg_area_num ).^2))/RING(jj).avg_area_num  / numfiles);
+
+        
 %         
 %         RING(jj).meanvort2 = RING(jj).meanvort2 + sum(sum(tmp1.^2))/(length(ixs) * numy * numfiles);
 
@@ -181,6 +189,7 @@ end
 % vorticity var inside "ring", over space (one alongshore transect)
 % and time 
 varvort = zeros(length(RING),1);
+varvort_valid = zeros(length(RING),1);
 meanvort = zeros(length(RING),1);
 meanvort2 = zeros(length(RING),1);
 % length of one size of averaging area
@@ -188,6 +197,7 @@ rsize = zeros(length(RING),1);
 for ii = 1:length(RING)
 %     RING(ii).varvort = RING(ii).meanvort2 - RING(ii).meanvort;
     varvort(ii) = RING(ii).varvort;
+    varvort_valid(ii) = RING(ii).varvort_valid;
     var_meanvort_all(ii) = var(RING(ii).meanvort_all);
 %     meanvort(ii) = RING(ii).meanvort;
 %     meanvort2(ii) = RING(ii).meanvort2;
@@ -195,9 +205,10 @@ for ii = 1:length(RING)
 end
 
 figure(3); clf
-plot(rsize,varvort)
-
-
+plot(rsize,varvort, rsize, varvort_valid,'--','linewidth',1.5)
+legend('convolution with mirrored edges','convolution with central valid region')
+xlabel('ring size')
+ylabel('vorticity variance (1/s^2)')
 
 %% combine cross- and alongshore wavenumber spectra for comparison with
 % ring averages
@@ -258,8 +269,8 @@ legend('ring average','spectrum cross-shore','spectrum alognshore','location','s
 
 %% compare total variance in cross and alongshore wavenumber spectra
 
-datadir = '/Volumes/DAVIDCLARK/fC_RODSEX_0928_D3_dx1p3/';
-% datadir = '/Volumes/ThunderBay/fC_RODSEX_0928_D3_dx1p3/';
+%datadir = '/Volumes/DAVIDCLARK/fC_RODSEX_0928_D3_dx1p3/';
+ datadir = '/Volumes/ThunderBay/fC_RODSEX_0928_D3_dx1p3/';
 % datadir = '~/Dropbox/RODSEX/funwaveC/';
 load(sprintf('%ssnap_vort_l2_%4.0f.mat',datadir,3599+numfiles))
 
