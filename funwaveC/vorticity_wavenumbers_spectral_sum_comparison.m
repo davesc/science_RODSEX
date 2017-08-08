@@ -149,12 +149,13 @@ for ii = 3599:(3599+numfiles)
 %         end
     end
     
+    % TODO: averaging spectra is missing some variance. Need to include the
+    % variation in the mean, 1st bin, of each spectra
+    
     % alongshore wavenumber spectra
-    % TODO: need to check if mypsd and mywelch are ginving similar results
-    %%%%%%%%%%
     [mpsd,wavenums]=mypsd(vort.',dy);
+    % mypsd and mywelch are giving the same results 
     [mpsd_mw,wavenums_mw]=mywelch(vort.',dy,1,0);
-    %%%%%%%%%
     wavenum_spec_vort = wavenum_spec_vort + mpsd.'/numfiles;
     wavenum_spec_vort_mw = wavenum_spec_vort_mw + mpsd_mw.'/numfiles;
     
@@ -163,11 +164,9 @@ for ii = 3599:(3599+numfiles)
     winvort0 = detrend(vort(ixs,:)).*w;
     var1 = var(winvort0);
     winvort1 = winvort0.*repmat(sqrt(var0./var1),length(ixs),1);
-    % TODO: need to check if mypsd and mywelch are ginving similar results
-    %%%%%%%%%%
     [mpsd2,wavenums_x_short]=mypsd(winvort1,dx);
+    % mypsd and mywelch are giving the same results
     [mpsd2_mw,wavenums_x_short_mw]=mywelch(vort(ixs,:),dx,1,0);
-    %%%%%%%%%%
     wavenum_spec_vort_xshore_short = wavenum_spec_vort_xshore_short + mpsd2.'/numfiles;
     wavenum_spec_vort_xshore_short_mw = wavenum_spec_vort_xshore_short_mw + mpsd2_mw.'/numfiles;
     
