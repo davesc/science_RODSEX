@@ -88,6 +88,8 @@ n=0;
 vort_ring = zeros(numfiles,60);
 wavenum_spec_vort = zeros(size(vort,1),stop);
 wavenum_spec_vort_xshore_short = zeros(numy,stop2);
+wavenum_spec_vort_mw = zeros(size(vort,1),stop);
+wavenum_spec_vort_xshore_short_mw = zeros(numy,stop2);
 % total_var = 0;
 sz = length(ixs) * numy;
 
@@ -112,9 +114,7 @@ for ii = 3599:(3599+numfiles)
 %         tmp = imboxfilt(vort2, RING(jj).bin_length, 'NormalizationFactor',RING(jj).filter_weight);
 %         RING(jj).meanvort2 = RING(jj).meanvort2 + sum(sum(tmp.*RING(jj).avg_area));
 %         
-        % use image box filter to get means
-        % TODO: check that the mirrored edged on the imboxfilt make sense
-        % mabye try using just the valid convolution area 
+        % use image box filter to get means 
         tmp1 = imboxfilt(vort1, RING(jj).bin_length,'padding','symmetric');
         RING(jj).varvort = RING(jj).varvort + (sum(sum((tmp1 - sum(sum(tmp1))/sz ).^2))/sz  / numfiles);
         RING(jj).meanvort_all(ii) = sum(sum(tmp1))/sz;
@@ -153,21 +153,23 @@ for ii = 3599:(3599+numfiles)
     % TODO: need to check if mypsd and mywelch are ginving similar results
     %%%%%%%%%%
     [mpsd,wavenums]=mypsd(vort.',dy);
-    [mpsd,wavenums]=mywelch(vort.',dy,1,0);
+    [mpsd_mw,wavenums_mw]=mywelch(vort.',dy,1,0);
     %%%%%%%%%
     wavenum_spec_vort = wavenum_spec_vort + mpsd.'/numfiles;
+    wavenum_spec_vort_mw = wavenum_spec_vort_mw + mpsd_mw.'/numfiles;
     
     % cross-shore wavenumber spectra, using cross-shore hanning window
-    winvort0 = detrend(vort(ixs,:).*w);
     var0 = var(vort(ixs,:));
+    winvort0 = detrend(vort(ixs,:)).*w;
     var1 = var(winvort0);
     winvort1 = winvort0.*repmat(sqrt(var0./var1),length(ixs),1);
     % TODO: need to check if mypsd and mywelch are ginving similar results
     %%%%%%%%%%
     [mpsd2,wavenums_x_short]=mypsd(winvort1,dx);
-    [mpsd2,wavenums_x_short]=mywelch(vort(ixs,:),dx,1,0);
+    [mpsd2_mw,wavenums_x_short_mw]=mywelch(vort(ixs,:),dx,1,0);
     %%%%%%%%%%
     wavenum_spec_vort_xshore_short = wavenum_spec_vort_xshore_short + mpsd2.'/numfiles;
+    wavenum_spec_vort_xshore_short_mw = wavenum_spec_vort_xshore_short_mw + mpsd2_mw.'/numfiles;
     
     
     
@@ -267,6 +269,14 @@ xlabel('1/ringSize, wavenum\_limit (1/m)')
 ylabel('vort variance (1/s^2)')
 legend('ring average','spectrum cross-shore','spectrum alognshore','location','southeast')
 
+
+%% figure: plot mypsd vs mywelch wavenumber spectra
+
+figure(10); clf
+plot(wavenums,mean(wavenum_spec_vort(ixs,:)),wavenums_mw,mean(wavenum_spec_vort_mw(ixs,:)),'--',wavenums_x_short,mean(wavenum_spec_vort_xshore_short), wavenums_x_short_mw,mean(wavenum_spec_vort_xshore_short_mw),'--')
+legend('along mypsd','along mywelch','cross mypsd','cross mywelch')
+ylabel('vort spectra')
+xlabel('wavenumber')
 %% compare total variance in cross and alongshore wavenumber spectra
 
 %datadir = '/Volumes/DAVIDCLARK/fC_RODSEX_0928_D3_dx1p3/';
