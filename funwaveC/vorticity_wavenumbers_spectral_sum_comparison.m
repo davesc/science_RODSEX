@@ -159,6 +159,7 @@ for ii = 3599:(3599+numfiles)
     wavenum_spec_vort = wavenum_spec_vort + mpsd.'/numfiles;
     wavenum_spec_vort_mw = wavenum_spec_vort_mw + mpsd_mw.'/numfiles;
     
+    
     % cross-shore wavenumber spectra, using cross-shore hanning window
     var0 = var(vort(ixs,:));
     winvort0 = detrend(vort(ixs,:)).*w;
@@ -289,8 +290,8 @@ v2 = vort(ixs,:);
 sprintf('total variance in ixs region = %f',var(v2(:)))
 
 % total variance in alongshore wavenumber spectra
-alongshore_spectra_total_var = sum(mean(wavenum_spec_vort(ixs,:)))*(wavenums(2)-wavenums(1))
+alongshore_spectra_total_var = sum(mean(wavenum_spec_vort(ixs,2:end)))*(wavenums(2)-wavenums(1))
 
 % total variance in xshore wavenumber spectra
-xshore_spectra_total_var = sum(mean(wavenum_spec_vort_xshore_short))*(wavenums_x_short(2)-wavenums_x_short(1))
-xshore_spectra_interp_total_var = sum(wavenum_spec_vort_xshore_short_interp)*(wavenums(2)-wavenums(1))
+xshore_spectra_total_var = sum(mean(wavenum_spec_vort_xshore_short(:,2:end)))*(wavenums_x_short(2)-wavenums_x_short(1))
+xshore_spectra_interp_total_var = sum(wavenum_spec_vort_xshore_short_interp(:,2:end))*(wavenums(2)-wavenums(1))
