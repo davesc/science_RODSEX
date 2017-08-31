@@ -72,7 +72,43 @@ pause(.1)
 
 end
 
-%%
+%% quick-n-dirty sea-surface elevation animation
+
+eta = load_fCbinary_file('/Volumes/ThunderBay/fC_RODSEX_0928_D3_dx1p3/snap_eta_snap_l2_3600.fCdat');
+etasmall = eta(:,1:5:21);
+eddy = load_fCbinary_file('/Volumes/ThunderBay/fC_RODSEX_0928_D3_dx1p3/snap_eddy_snap_l2_3600.fCdat');
+ind_eddy = find(eddy(:,1:5:21));
+xind = repmat(1:size(eddy,1),1,size(eddy,2));
+h = load('/Volumes/ThunderBay/fC_RODSEX_0928_D3_dx1p3/bathy_RODSEX_0925_09281600_1D_D_dx1p3.depth');
+
+figure(1);
+clf
+plot(-h); 
+hold on
+hp1 = plot(etasmall);
+hp2 = plot(xind(ind_eddy),etasmall(ind_eddy),'ko');
+title('eta, 5 cross-shore lines, 6.67 m spacing, circles indicate breaking eddy viscocity')
+xlabel('xshore bins')
+ylabel('eta, surface elevation (m)')
+
+for ii = 3600:4000;
+eta = load_fCbinary_file(sprintf('/Volumes/ThunderBay/fC_RODSEX_0928_D3_dx1p3/snap_eta_snap_l2_%d.fCdat',ii));
+etasmall = eta(:,1:5:21);
+eddy = load_fCbinary_file(sprintf('/Volumes/ThunderBay/fC_RODSEX_0928_D3_dx1p3/snap_eddy_snap_l2_%d.fCdat',ii));
+ind_eddy = find(eddy(:,1:5:21));
+hold off
+plot(-h); 
+hold on
+plot(etasmall);
+plot(xind(ind_eddy),etasmall(ind_eddy),'ko');
+title('eta, 5 cross-shore lines, 6.67 m spacing, circles indicate breaking eddy viscosity')
+xlabel('xshore bins')
+ylabel('eta, surface elevation (m)')
+% set(hp1,'ydata',etasmall)
+% set(hp2,'xdata',xind(ind_eddy),'ydata',etasmall(ind_eddy))
+pause(.15)
+
+end
 
 
 
