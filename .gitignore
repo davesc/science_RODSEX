@@ -5,6 +5,7 @@
 *.pdf
 *.jpg
 *.jpeg
+*.m~
 
 ########################
 # OS X directory stuff #

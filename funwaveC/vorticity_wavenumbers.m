@@ -271,7 +271,7 @@ legend('x-shore','alongshore','combined','xshort')
 %%
 
 short_for_interp = mean(wavenum_spec_vort_xshore_short);
-short_for_interp(1) = short_for_interp(2); % remove mean
+short_for_interp(1) = short_for_interp(2); % remove mean and extrapolate
 
 
 wavenum_spec_vort_xshore_short_interp = interp1(wavenums_x_short,short_for_interp,wavenums,'linear','extrap');
